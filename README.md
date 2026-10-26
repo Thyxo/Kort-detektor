@@ -1,5 +1,7 @@
 # Card Detector
 
+
+**Live:** https://card-detector.vercel.app
 Magi-app (PWA) der ligner en detektor, man holder hen over et spillekort. Den registrerer intet – buerne tænder, når du trykker på en usynlig hemmelig knap.
 
 ## Sådan bruges den
