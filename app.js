@@ -6,20 +6,27 @@
 (() => {
 'use strict';
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 // ============ ÅBNING AF HEMMELIG MENU – ret her ============
 const MENU_OPEN = {
-  method: 'longpress',   // 'longpress' (hold fingeren) eller 'taps' (flere hurtige tryk)
+  method: 'taps',        // 'taps' (flere hurtige tryk) eller 'longpress' (hold fingeren)
   holdMs: 1500,          // longpress: hvor længe der skal holdes
   taps: 5,               // taps: antal tryk ...
   tapWindowMs: 2500,     // ... inden for så mange ms
   corner: 'top-right',   // 'top-right' | 'top-left' | 'bottom-right'
-  size: 96,              // zonens størrelse i px (plus safe-area)
+  size: 90,              // zonens størrelse i px (plus safe-area)
 };
 
 // ============ UDSEENDE OG TIMING ============
 const ARC_COUNT = 10;
+const ARC_LAYOUT = {
+  bottomRatio: 0.48,   // nederste bues radius i forhold til øverste (lavere = buerne starter tættere på knappen)
+  strokeRatio: 0.38,   // stregtykkelse i forhold til afstanden mellem buerne
+  maxStroke: 14,       // px
+  sideMargin: 24,      // afstand fra skærmkant til øverste bues ender
+  maxAngle: 38,        // største halve vinkel (grader)
+};
 const SPEEDS = { fast: 800, medium: 1200, slow: 2000 };      // ms fra første til sidste bue
 const SECRET_SIZES = { small: 64, medium: 84, large: 108 };   // px
 const VOLUMES = { low: 0.22, mid: 0.5, high: 0.9 };
@@ -97,50 +104,70 @@ function mix(t) {
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 
+// Buerne er "bølger" ud fra den runde knap (fælles centrum i knappens midte):
+// den nederste lige over knappen, den øverste lige under statuslinjen.
+let arcLayer = null;
+let glowLayer = null;
+
+function safeTop() {
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:absolute;top:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none';
+  document.body.appendChild(probe);
+  const v = probe.offsetHeight;
+  probe.remove();
+  return v;
+}
+
 function buildArcs() {
-  const R0 = 92;        // mindste radius (nederste bue)
-  const PITCH = 16.5;   // afstand mellem buerne
-  const SW = 9;         // stregtykkelse
-  const SPAN = 37 * Math.PI / 180; // halv vinkel
-  const PAD = 16;
-  const rMax = R0 + PITCH * (ARC_COUNT - 1);
-  const cx = rMax * Math.sin(SPAN) + SW / 2 + PAD;
-  const cy = rMax + SW / 2 + PAD;
-  const h = cy - R0 * Math.cos(SPAN) + SW / 2 + PAD;
-  svg.setAttribute('viewBox', `0 0 ${(cx * 2).toFixed(1)} ${h.toFixed(1)}`);
+  if (!arcLayer) {
+    const defs = document.createElementNS(SVG_NS, 'defs');
+    defs.innerHTML = '<filter id="blur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>';
+    glowLayer = document.createElementNS(SVG_NS, 'g');
+    glowLayer.setAttribute('filter', 'url(#blur)');
+    arcLayer = document.createElementNS(SVG_NS, 'g');
+    svg.append(defs, glowLayer, arcLayer);
+    for (let i = 0; i < ARC_COUNT; i++) {
+      const color = mix(i / (ARC_COUNT - 1));
+      const g = document.createElementNS(SVG_NS, 'path');
+      g.setAttribute('class', 'glow');
+      g.style.stroke = color;
+      glowLayer.appendChild(g);
+      const p = document.createElementNS(SVG_NS, 'path');
+      p.setAttribute('class', 'arc');
+      p.dataset.color = color;
+      arcLayer.appendChild(p);
+      arcs.push(p);
+      glows.push(g);
+    }
+  }
+  layoutArcs();
+}
 
-  const defs = document.createElementNS(SVG_NS, 'defs');
-  defs.innerHTML = '<filter id="blur" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="5"/></filter>';
-  svg.appendChild(defs);
-  const glowLayer = document.createElementNS(SVG_NS, 'g');
-  glowLayer.setAttribute('filter', 'url(#blur)');
-  const arcLayer = document.createElementNS(SVG_NS, 'g');
-  svg.append(glowLayer, arcLayer);
-
+function layoutArcs() {
+  const W = app.clientWidth;
+  const H = app.clientHeight;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const b = mainBtn.getBoundingClientRect();
+  const a = app.getBoundingClientRect();
+  const cx = W / 2;
+  const cy = b.top - a.top + b.height / 2;          // knappens midte
+  const topY = Math.max(safeTop(), 20) + 46;         // øverste bue
+  const rMax = Math.max(cy - topY, 120);
+  const rMin = Math.max(rMax * ARC_LAYOUT.bottomRatio, b.height / 2 + 70);
+  const pitch = (rMax - rMin) / (ARC_COUNT - 1);
+  const sw = Math.max(6, Math.min(ARC_LAYOUT.maxStroke, pitch * ARC_LAYOUT.strokeRatio));
+  const halfW = W / 2 - ARC_LAYOUT.sideMargin - sw / 2;
+  const span = Math.min(Math.asin(Math.min(1, halfW / rMax)), ARC_LAYOUT.maxAngle * Math.PI / 180);
   for (let i = 0; i < ARC_COUNT; i++) {
-    const r = R0 + PITCH * i;
-    const x1 = cx - r * Math.sin(SPAN);
-    const x2 = cx + r * Math.sin(SPAN);
-    const y = cy - r * Math.cos(SPAN);
-    const d = `M${x1.toFixed(2)} ${y.toFixed(2)} A${r} ${r} 0 0 1 ${x2.toFixed(2)} ${y.toFixed(2)}`;
-    const color = mix(i / (ARC_COUNT - 1));
-
-    const g = document.createElementNS(SVG_NS, 'path');
-    g.setAttribute('d', d);
-    g.setAttribute('class', 'glow');
-    g.setAttribute('stroke-width', SW + 4);
-    g.style.stroke = color;
-    glowLayer.appendChild(g);
-
-    const p = document.createElementNS(SVG_NS, 'path');
-    p.setAttribute('d', d);
-    p.setAttribute('class', 'arc');
-    p.setAttribute('stroke-width', SW);
-    p.dataset.color = color;
-    arcLayer.appendChild(p);
-
-    arcs.push(p);
-    glows.push(g);
+    const r = rMin + pitch * i;
+    const x1 = cx - r * Math.sin(span);
+    const x2 = cx + r * Math.sin(span);
+    const y = cy - r * Math.cos(span);
+    const d = `M${x1.toFixed(1)} ${y.toFixed(1)} A${r.toFixed(1)} ${r.toFixed(1)} 0 0 1 ${x2.toFixed(1)} ${y.toFixed(1)}`;
+    arcs[i].setAttribute('d', d);
+    arcs[i].setAttribute('stroke-width', sw.toFixed(1));
+    glows[i].setAttribute('d', d);
+    glows[i].setAttribute('stroke-width', (sw + 6).toFixed(1));
   }
 }
 
@@ -405,11 +432,8 @@ function placeSecret() {
     x = r.left + r.width / 2 - s / 2;
     y = r.top - gap - s;
   } else if (settings.secretPos === 'left') {
-    // smal zone helt ude ved kanten – gøres højere for at være let at ramme
-    w = Math.max(r.left - gap, 24);
-    h = Math.round(s * 1.6);
-    x = Math.max(0, r.left - gap - w);
-    y = cyBtn - h / 2;
+    x = r.left - gap - s;
+    y = cyBtn - s / 2;
   } else {
     x = r.right + gap;
     y = cyBtn - s / 2;
@@ -473,7 +497,7 @@ function openMenu() {
 }
 function closeMenu(force) {
   if (menu.hidden) return;
-  if (!force && performance.now() - menuOpenedAt < 500) return;
+  if (!force && performance.now() - menuOpenedAt < 1000) return;
   menu.classList.remove('open');
   sheet.style.transform = '';
   sheet.classList.remove('dragging');
@@ -524,7 +548,7 @@ function syncMenu() {
   menu.querySelectorAll('[data-dep]').forEach((row) => row.classList.toggle('off', !settings[row.dataset.dep]));
   const notes = {
     right: 'Usynlig zone til højre for den runde knap.',
-    left: 'Smal usynlig zone helt ude ved venstre kant, ud for den runde knap.',
+    left: 'Usynlig zone til venstre for den runde knap.',
     above: 'Usynlig zone lige over den runde knap.',
   };
   $('zoneNote').textContent = settings.secretEnabled
@@ -622,6 +646,7 @@ function fixHeight() {
 }
 function onResize() {
   fixHeight();
+  layoutArcs();
   placeSecret();
 }
 window.addEventListener('resize', onResize);
@@ -638,9 +663,9 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // ============ START ============
-buildArcs();
 placeMenuZone();
 fixHeight();
+buildArcs();
 placeSecret();
 syncMenu();
 setState('off');

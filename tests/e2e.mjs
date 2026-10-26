@@ -53,6 +53,12 @@ await wait(300);
 
 ok(await page.locator('.arc').count() === 10, '10 buer tegnet');
 ok(await st() === 'off', 'starter SLUKKET');
+const mbox = await page.locator('#mainBtn').boundingBox();
+ok(Math.abs(mbox.x + mbox.width / 2 - 393 / 2) < 1, 'hovedknap i midten');
+const topArc = await page.locator('.arc').nth(9).boundingBox();
+const lowArc = await page.locator('.arc').nth(0).boundingBox();
+ok(topArc.y < 120 && topArc.width > 300, `øverste bue højt oppe og bred (y=${topArc.y.toFixed(0)}, b=${topArc.width.toFixed(0)})`);
+ok(lowArc.y + lowArc.height < mbox.y - 40 && lowArc.width < topArc.width * 0.6, 'nederste bue kort og over knappen');
 await shot('1-off');
 
 // hemmelig knap virker ikke, når den er slukket
@@ -96,12 +102,17 @@ await touch(...await center('#mainBtn'));
 await wait(500);
 ok(await st() === 'off' && await litCount() === 0, 'tryk på hovedknap → nulstillet (SLUKKET)');
 
-// hemmelig menu: kort tryk åbner ikke, langt tryk gør
-await touch(380, 20, 300);
-ok(await page.locator('#menu').isHidden(), 'kort tryk øverst til højre åbner ikke menuen');
-await touch(380, 20, 1700);
+// hemmelig menu: 5 hurtige tryk
+const taps = async (n) => { for (let i = 0; i < n; i++) await touch(380, 20, 30); };
+await taps(4);
+await wait(2700);
+ok(await page.locator('#menu').isHidden(), '4 tryk åbner ikke menuen');
+await taps(5);
 await wait(450);
-ok(await page.locator('#menu').isVisible(), 'langt tryk (1,5 s) åbner hemmelig menu');
+ok(await page.locator('#menu').isVisible(), '5 hurtige tryk øverst til højre åbner hemmelig menu');
+await touch(380, 20, 30);
+await wait(300);
+ok(await page.locator('#menu').isVisible(), 'et ekstra hurtigt tryk lukker ikke menuen');
 await shot('5-menu');
 
 // slå lyd fra, hastighed hurtig, placering over, størrelse stor
@@ -145,8 +156,8 @@ await wait(400);
 ok(await litCount() === 0, 'hemmelig knap slået fra → intet sker');
 
 // lukkeknap
-await touch(380, 20, 1700);
-await wait(600);
+await taps(5);
+await wait(1100);
 await page.locator('#menuDone').click();
 await wait(500);
 ok(await page.locator('#menu').isHidden(), 'Færdig-knap lukker menuen');

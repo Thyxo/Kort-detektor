@@ -5,7 +5,7 @@
 Magi-app (PWA) der ligner en detektor, man holder hen over et spillekort. Den registrerer intet – buerne tænder, når du trykker på en usynlig hemmelig knap.
 
 ## Sådan bruges den
-1. **Tryk på den runde knap** (nederst til venstre) → knappen bliver rød = detektoren er "tændt". Buerne er grå.
+1. **Tryk på den runde knap** (nederst i midten) → knappen bliver rød = detektoren er "tændt". Buerne er grå.
 2. Før telefonen hen over kortene. Ved det rigtige kort: **tryk diskret med tommelfingeren lige til højre for knappen** (usynlig knap).
 3. Buerne tænder nedefra og op (rød → orange → gul → grøn) med stigende bip og en "fundet"-tone til sidst.
 4. **Tryk på den runde knap** for at nulstille.
@@ -13,7 +13,7 @@ Magi-app (PWA) der ligner en detektor, man holder hen over et spillekort. Den re
 Den hemmelige knap virker kun, når detektoren er tændt (rød).
 
 ## Hemmelig menu
-**Hold fingeren 1,5 sek. i øverste højre hjørne.** Luk med *Færdig*, tryk udenfor eller træk arket ned.
+**5 hurtige tryk i øverste højre hjørne.** Luk med *Færdig*, tryk udenfor eller træk arket ned.
 
 - **Lyd**: til/fra, lydstyrke, spil selv på lydløs, prøvelyd
 - **Hemmelig knap**: til/fra, placering (venstre / over / højre), størrelse, *vis knappen* (til øvelse), vibration ved tryk
@@ -22,7 +22,7 @@ Den hemmelige knap virker kun, når detektoren er tændt (rød).
 
 Alt gemmes på telefonen (localStorage).
 
-Åbningsmetoden ændres øverst i `app.js` (`MENU_OPEN`): langt tryk eller flere hurtige tryk, hjørne, tid og størrelse.
+Åbningsmetoden ændres øverst i `app.js` (`MENU_OPEN`): antal tryk, langt tryk i stedet, hjørne og størrelse. Buernes form ændres i `ARC_LAYOUT`.
 
 ## 1. Opret GitHub-repo
 1. github.com → **New repository** → navn fx `Kort-detektor` → **Create**.

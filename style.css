@@ -6,9 +6,9 @@
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
 
-  --btn: 68px;              /* hovedknappens størrelse */
-  --btn-x: 30px;            /* afstand fra venstre kant */
-  --btn-y: 30px;            /* afstand fra bunden (over home-bar) */
+  --btn: 76px;              /* hovedknappens størrelse */
+  --btn-ring: 7px;          /* ringens tykkelse */
+  --btn-y: 24px;            /* afstand fra bunden (over home-bar) */
 
   --bg: #000;
   --red: #ff3b30;
@@ -66,10 +66,9 @@ img, svg { -webkit-user-drag: none; }
 
 .arcs {
   position: absolute;
-  left: 50%;
-  top: 47%;
-  width: min(84vw, 360px);
-  transform: translate(-50%, -50%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: visible;
   pointer-events: none;
 }
@@ -77,11 +76,9 @@ img, svg { -webkit-user-drag: none; }
 .arc {
   fill: none;
   stroke-linecap: round;
-  stroke: #4a4a4e;
+  stroke: #a4a4a9;
   transition: stroke .5s ease, opacity .5s ease;
 }
-.app[data-state="active"] .arc,
-.app[data-state="rising"] .arc { stroke: #6e6e73; }
 
 .arc.lit {
   transition: stroke .09s ease-out;
@@ -92,7 +89,7 @@ img, svg { -webkit-user-drag: none; }
   opacity: 0;
   transition: opacity .5s ease;
 }
-.glow.lit { opacity: .55; transition: opacity .12s ease-out; }
+.glow.lit { opacity: .5; transition: opacity .12s ease-out; }
 
 /* fundet: et kort blink på alle buer */
 .app.flash .arcs { animation: flash .55s ease-out; }
@@ -105,7 +102,7 @@ img, svg { -webkit-user-drag: none; }
 /* hovedknap: hvid ring (slukket) / rød prik i ring (aktiv) */
 .main-btn {
   position: absolute;
-  left: calc(var(--btn-x) + var(--safe-left));
+  left: calc(50% - var(--btn) / 2);
   bottom: calc(var(--btn-y) + var(--safe-bottom));
   width: var(--btn);
   height: var(--btn);
@@ -117,11 +114,11 @@ img, svg { -webkit-user-drag: none; }
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 4px solid #fff;
+  border: var(--btn-ring) solid #fff;
 }
 .main-btn .dot {
   position: absolute;
-  inset: 9px;
+  inset: calc(var(--btn-ring) + 4px);
   border-radius: 50%;
   background: var(--red);
   transform: scale(0);
@@ -157,7 +154,7 @@ img, svg { -webkit-user-drag: none; }
 .menu { position: fixed; inset: 0; z-index: 50; }
 .scrim {
   position: absolute;
-  inset: 0;
+  inset: 0 0 -200px 0;
   background: rgba(0, 0, 0, .55);
   opacity: 0;
   transition: opacity .3s ease;
@@ -169,12 +166,13 @@ img, svg { -webkit-user-drag: none; }
   left: 50%;
   width: min(100vw, 480px);
   top: calc(var(--safe-top) + 56px);
-  bottom: 0;
+  bottom: -200px;
+  padding-bottom: 200px;
   background: var(--sheet);
   border-radius: 14px 14px 0 0;
   display: flex;
   flex-direction: column;
-  transform: translate(-50%, 105%);
+  transform: translate(-50%, calc(100% + 10px));
   transition: transform .38s cubic-bezier(.2, .9, .25, 1);
   will-change: transform;
 }
