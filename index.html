@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Card Detector" />
+  <meta name="application-name" content="Card Detector" />
+  <meta name="format-detection" content="telephone=no,date=no,address=no,email=no" />
+  <title>Card Detector</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <!-- Sorte opstartsbilleder, så iOS ikke blinker hvidt ved åbning -->
+  <link rel="apple-touch-startup-image" href="splash/1320x2868.png" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="splash/1206x2622.png" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="splash/1260x2736.png" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="splash/1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="splash/1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="splash/1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="splash/1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="splash/1080x2340.png" media="(device-width: 360px) and (device-height: 780px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="splash/1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="splash/1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="splash/828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" />
+  <link rel="apple-touch-startup-image" href="splash/750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app" id="app" data-state="off">
+    <!-- Buerne tegnes af app.js -->
+    <svg class="arcs" id="arcs" aria-hidden="true"></svg>
+
+    <button class="main-btn" id="mainBtn" type="button" aria-label="Start">
+      <span class="ring"></span>
+      <span class="dot"></span>
+    </button>
+
+    <!-- Usynlig hemmelig knap -->
+    <div class="secret-btn" id="secretBtn" aria-hidden="true"></div>
+
+    <!-- Usynlig zone, der åbner den hemmelige menu -->
+    <div class="menu-zone" id="menuZone" aria-hidden="true"></div>
+  </main>
+
+  <!-- ============ HEMMELIG MENU ============ -->
+  <div class="menu" id="menu" hidden>
+    <div class="scrim" id="scrim"></div>
+    <section class="sheet" id="sheet" role="dialog" aria-label="Indstillinger">
+      <header class="sheet-head" id="sheetHead">
+        <span class="grabber"></span>
+        <span></span>
+        <span class="sheet-title">Indstillinger</span>
+        <button class="sheet-done" id="menuDone" type="button">Færdig</button>
+      </header>
+
+      <div class="sheet-scroll" id="sheetScroll">
+        <h3 class="sec-title">Lyd</h3>
+        <div class="group">
+          <label class="row">
+            <span>Lyd</span>
+            <input class="switch" type="checkbox" data-key="sound" />
+          </label>
+          <div class="row stack" data-dep="sound">
+            <span>Lydstyrke</span>
+            <div class="seg" data-key="volume">
+              <button type="button" data-v="low">Lav</button>
+              <button type="button" data-v="mid">Mellem</button>
+              <button type="button" data-v="high">Høj</button>
+            </div>
+          </div>
+          <label class="row" data-dep="sound">
+            <span>Spil lyd selv på lydløs</span>
+            <input class="switch" type="checkbox" data-key="ignoreSilent" />
+          </label>
+          <button class="row link" id="testSound" type="button" data-dep="sound">Afspil prøvelyd</button>
+        </div>
+
+        <h3 class="sec-title">Hemmelig knap</h3>
+        <div class="group">
+          <label class="row">
+            <span>Hemmelig knap</span>
+            <input class="switch" type="checkbox" data-key="secretEnabled" />
+          </label>
+          <div class="row stack" data-dep="secretEnabled">
+            <span>Placering</span>
+            <div class="seg" data-key="secretPos">
+              <button type="button" data-v="left">Venstre</button>
+              <button type="button" data-v="above">Over</button>
+              <button type="button" data-v="right">Højre</button>
+            </div>
+          </div>
+          <div class="row stack" data-dep="secretEnabled">
+            <span>Størrelse</span>
+            <div class="seg" data-key="secretSize">
+              <button type="button" data-v="small">Lille</button>
+              <button type="button" data-v="medium">Mellem</button>
+              <button type="button" data-v="large">Stor</button>
+            </div>
+          </div>
+          <label class="row" data-dep="secretEnabled">
+            <span>Vis knappen (til øvelse)</span>
+            <input class="switch" type="checkbox" data-key="showZone" />
+          </label>
+          <label class="row">
+            <span>Vibration ved tryk</span>
+            <input class="switch" type="checkbox" data-key="haptic" />
+          </label>
+        </div>
+        <p class="note" id="zoneNote">Usynlig zone ved siden af den runde knap. Virker kun, når detektoren er tændt (rød).</p>
+
+        <h3 class="sec-title">Opstigning</h3>
+        <div class="group">
+          <div class="row stack">
+            <span>Hastighed</span>
+            <div class="seg" data-key="speed">
+              <button type="button" data-v="fast">Hurtig</button>
+              <button type="button" data-v="medium">Medium</button>
+              <button type="button" data-v="slow">Langsom</button>
+            </div>
+          </div>
+          <div class="row stack">
+            <span>Tryk på knappen efter fund</span>
+            <div class="seg" data-key="afterFound">
+              <button type="button" data-v="off">Sluk</button>
+              <button type="button" data-v="active">Klar igen</button>
+            </div>
+          </div>
+          <button class="row link" id="testRun" type="button">Vis demo</button>
+        </div>
+
+        <div class="group gap">
+          <button class="row link danger" id="resetSettings" type="button">Nulstil indstillinger</button>
+        </div>
+        <p class="note center">Åbn menuen: hold fingeren 1,5 sek. øverst til højre.<br /><span id="version"></span></p>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
