@@ -6,7 +6,7 @@
 (() => {
 'use strict';
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 
 // ============ ÅBNING AF HEMMELIG MENU – ret her ============
 const MENU_OPEN = {
@@ -19,9 +19,9 @@ const MENU_OPEN = {
 };
 
 // ============ UDSEENDE OG TIMING ============
-const ARC_COUNT = 10;
+const ARC_COUNT = 16;
 const ARC_LAYOUT = {
-  bottomRatio: 0.48,   // nederste bues radius i forhold til øverste (lavere = buerne starter tættere på knappen)
+  bottomGap: 52,       // afstand fra knappens kant til den nederste bue (px)
   strokeRatio: 0.38,   // stregtykkelse i forhold til afstanden mellem buerne
   maxStroke: 14,       // px
   sideMargin: 24,      // afstand fra skærmkant til øverste bues ender
@@ -153,7 +153,7 @@ function layoutArcs() {
   const cy = b.top - a.top + b.height / 2;          // knappens midte
   const topY = Math.max(safeTop(), 20) + 46;         // øverste bue
   const rMax = Math.max(cy - topY, 120);
-  const rMin = Math.max(rMax * ARC_LAYOUT.bottomRatio, b.height / 2 + 70);
+  const rMin = Math.min(b.height / 2 + ARC_LAYOUT.bottomGap, rMax * 0.5);
   const pitch = (rMax - rMin) / (ARC_COUNT - 1);
   const sw = Math.max(6, Math.min(ARC_LAYOUT.maxStroke, pitch * ARC_LAYOUT.strokeRatio));
   const halfW = W / 2 - ARC_LAYOUT.sideMargin - sw / 2;
@@ -252,7 +252,7 @@ function beep(i) {
   if (!canPlay()) return;
   master.gain.value = VOLUMES[settings.volume] || VOLUMES.mid;
   const t = ctx.currentTime + 0.005;
-  const f = 520 * Math.pow(2, (i * 2) / 12);
+  const f = 520 * Math.pow(2, (i * (20 / (ARC_COUNT - 1))) / 12); // knap 2 oktaver i alt
   tone(f, t, 0.075, 'square', 0.32, 3.2);
   tone(f * 2, t, 0.05, 'sine', 0.08);
   stats.beeps++;
@@ -487,6 +487,7 @@ let closeTimer = 0;
 function openMenu() {
   clearTimeout(closeTimer);
   syncMenu();
+  syncDiag();
   menu.hidden = false;
   sheet.style.transform = '';
   void sheet.offsetHeight;
@@ -634,29 +635,69 @@ document.addEventListener('touchend', (e) => {
   lastTouchEnd = now;
 }, { passive: false });
 
-// I hjemmeskærm-tilstand kan iOS melde en for lav sidehøjde – brug skærmens højde
+// ---------- højde: iOS-fejl i hjemmeskærm-apps ----------
+// På hjemmeskærmen gør iOS siden for lav (statuslinjens højde, ca. 59 pt), så der
+// kommer en sort stribe i bunden. Vi stoler derfor ikke på CSS (100%, inset: 0, vh)
+// men giver html, body, appen og menuen en fast højde i px: den største kendte
+// højde – og på hjemmeskærmen altid hele skærmens højde.
 const isStandalone = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
-function fixHeight() {
-  const portrait = innerHeight > innerWidth;
-  const fix = isStandalone() && portrait && screen.height > innerHeight + 20;
-  for (const el of [document.documentElement, document.body, app, menu]) {
-    el.style.height = fix ? `${screen.height}px` : '';
-    el.style.bottom = fix ? 'auto' : '';
+let lvhProbe = null;
+let appHeight = 0;
+function measureHeight() {
+  let h = Math.max(window.innerHeight || 0, document.documentElement.clientHeight || 0);
+  if (isStandalone()) {
+    if (!lvhProbe) {
+      lvhProbe = document.createElement('div');
+      lvhProbe.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:100vh;height:100lvh;visibility:hidden;pointer-events:none';
+      document.body.appendChild(lvhProbe);
+    }
+    h = Math.max(h, lvhProbe.offsetHeight, window.visualViewport ? window.visualViewport.height : 0);
+    if (window.screen && screen.height) {
+      const portrait = window.innerHeight >= window.innerWidth;
+      const full = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+      if (full > h) h = full;
+    }
   }
+  return Math.round(h);
+}
+function fitHeight() {
+  const h = measureHeight();
+  if (h === appHeight) return false;
+  appHeight = h;
+  document.documentElement.style.setProperty('--app-h', `${h}px`);
+  return true;
 }
 function onResize() {
-  fixHeight();
+  fitHeight();
   layoutArcs();
   placeSecret();
+  syncDiag();
+}
+// Diagnose nederst i den hemmelige menu (send et skærmbillede, hvis noget ser forkert ud)
+function syncDiag() {
+  const el = $('diag');
+  if (!el) return;
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;top:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden';
+  document.body.appendChild(probe);
+  const cs = getComputedStyle(probe);
+  const safe = `${parseFloat(cs.paddingTop) || 0}/${parseFloat(cs.paddingBottom) || 0}`;
+  probe.remove();
+  el.textContent = `skærm ${screen.width}×${screen.height} · vindue ${innerWidth}×${innerHeight} · app ${app.clientHeight} · safe ${safe} · ${isStandalone() ? 'hjemmeskærm' : 'browser'}`;
 }
 window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', () => setTimeout(onResize, 300));
+window.addEventListener('pageshow', onResize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', onResize);
+// iOS kan ændre højden lige efter opstart uden at sige det – tjek et par gange
+for (const ms of [100, 400, 1000, 2500]) setTimeout(() => { if (fitHeight()) { layoutArcs(); placeSecret(); } }, ms);
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     // appen blev lagt væk midt i opstigningen → gør den færdig uden lyd
     if (rise) { cancelRise(); found(false); }
   } else {
+    onResize();
     if (wantLock) lockScreen();
     if (ctx && ctx.state !== 'running' && settings.sound) ctx.resume().catch(() => {});
   }
@@ -664,7 +705,7 @@ document.addEventListener('visibilitychange', () => {
 
 // ============ START ============
 placeMenuZone();
-fixHeight();
+fitHeight();
 buildArcs();
 placeSecret();
 syncMenu();

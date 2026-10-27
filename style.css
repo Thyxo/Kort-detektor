@@ -24,8 +24,14 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
 
+/* Fast højde i px fra app.js (--app-h) – se "højde: iOS-fejl" i app.js */
 html, body {
-  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  height: var(--app-h, 100lvh);
   background: var(--bg);
   color: #fff;
   font-family: var(--font);
@@ -39,7 +45,6 @@ html, body {
   touch-action: none;
 }
 
-body { position: fixed; inset: 0; }
 
 button {
   font: inherit;
@@ -58,7 +63,11 @@ img, svg { -webkit-user-drag: none; }
 /* ---------- hovedskærm ---------- */
 .app {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  height: var(--app-h, 100lvh);
   overflow: hidden;
   background: var(--bg);
   touch-action: none;
@@ -151,7 +160,7 @@ img, svg { -webkit-user-drag: none; }
 }
 
 /* ---------- hemmelig menu (bundark som i iOS) ---------- */
-.menu { position: fixed; inset: 0; z-index: 50; }
+.menu { position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: var(--app-h, 100lvh); z-index: 50; }
 .scrim {
   position: absolute;
   inset: 0 0 -200px 0;
@@ -300,3 +309,4 @@ img, svg { -webkit-user-drag: none; }
 }
 .switch:checked { background: var(--green); }
 .switch:checked::after { transform: translateX(20px); }
+.diag { font-size: 11px; color: #636366; }

@@ -51,14 +51,15 @@ await page.evaluate(() => localStorage.clear());
 await page.reload();
 await wait(300);
 
-ok(await page.locator('.arc').count() === 10, '10 buer tegnet');
+const N = await page.locator('.arc').count();
+ok(N === 16, `${N} buer tegnet`);
 ok(await st() === 'off', 'starter SLUKKET');
 const mbox = await page.locator('#mainBtn').boundingBox();
 ok(Math.abs(mbox.x + mbox.width / 2 - 393 / 2) < 1, 'hovedknap i midten');
-const topArc = await page.locator('.arc').nth(9).boundingBox();
+const topArc = await page.locator('.arc').nth(N - 1).boundingBox();
 const lowArc = await page.locator('.arc').nth(0).boundingBox();
 ok(topArc.y < 120 && topArc.width > 300, `øverste bue højt oppe og bred (y=${topArc.y.toFixed(0)}, b=${topArc.width.toFixed(0)})`);
-ok(lowArc.y + lowArc.height < mbox.y - 40 && lowArc.width < topArc.width * 0.6, 'nederste bue kort og over knappen');
+ok(lowArc.y + lowArc.height < mbox.y - 20 && lowArc.y > mbox.y - 130 && lowArc.width < topArc.width * 0.3, `nederste bue kort og lige over knappen (${(mbox.y - lowArc.y - lowArc.height).toFixed(0)} px)`);
 await shot('1-off');
 
 // hemmelig knap virker ikke, når den er slukket
@@ -86,16 +87,16 @@ await touch(...await center('#secretBtn'));
 ok(await st() === 'rising', 'hemmelig knap → buerne stiger');
 await wait(500);
 const mid = await litCount();
-ok(mid > 0 && mid < 10, `buerne tænder én for én (${mid}/10 efter 0,5 s)`);
+ok(mid > 0 && mid < N, `buerne tænder én for én (${mid}/${N} efter 0,5 s)`);
 await shot('3-rising');
 await wait(1100);
-ok(await st() === 'found' && await litCount() === 10, 'FUNDET: alle 10 buer tændt efter ca. 1,2 s');
+ok(await st() === 'found' && await litCount() === N, `FUNDET: alle ${N} buer tændt efter ca. 1,2 s`);
 let after = await stats();
-ok(after.beeps - before.beeps === 10 && after.found - before.found === 1, `lyd: 10 bip + fundet-tone (${after.beeps - before.beeps} bip)`);
+ok(after.beeps - before.beeps === N && after.found - before.found === 1, `lyd: ${N} bip + fundet-tone (${after.beeps - before.beeps} bip)`);
 await wait(800);
 await shot('4-found');
 await wait(1000);
-ok(await st() === 'found' && await litCount() === 10, 'FUNDET holdes');
+ok(await st() === 'found' && await litCount() === N, 'FUNDET holdes');
 
 // nulstil
 await touch(...await center('#mainBtn'));
@@ -168,8 +169,25 @@ ok(swOk, 'service worker aktiv');
 await page.reload(); await wait(400);
 await context.setOffline(true);
 await page.reload(); await wait(400);
-ok(await page.locator('.arc').count() === 10, 'appen åbner offline');
+ok(await page.locator('.arc').count() === N, 'appen åbner offline');
 await context.setOffline(false);
+
+// iOS-fejlen: hjemmeskærm-app, hvor vinduet er statuslinjens højde (59) for lavt
+const ios = await browser.newContext({
+  viewport: { width: 393, height: 793 }, screen: { width: 393, height: 852 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true,
+});
+await ios.addInitScript(() => Object.defineProperty(navigator, 'standalone', { get: () => true }));
+const p2 = await ios.newPage();
+p2.on('pageerror', (e) => errors.push(e.message));
+await p2.goto(`http://127.0.0.1:${PORT}/`);
+await wait(400);
+const dims = await p2.evaluate(() => {
+  const q = (s) => document.querySelector(s).getBoundingClientRect();
+  return { html: document.documentElement.clientHeight, body: q('body').height, app: q('#app').height, menu: (() => { const m = document.getElementById('menu'); m.hidden = false; const h = m.getBoundingClientRect().height; m.hidden = true; return h; })(), btn: q('#mainBtn').bottom };
+});
+ok(dims.app === 852 && dims.body === 852 && dims.menu === 852, `iOS-fejl: app/body/menu fylder hele skærmen (${dims.app}/${dims.body}/${dims.menu})`);
+ok(dims.btn > 793, `iOS-fejl: knappen sidder i den rigtige bund (${dims.btn})`);
+await ios.close();
 
 ok(errors.length === 0, `ingen JS-fejl ${errors.join(' | ')}`);
 await browser.close();

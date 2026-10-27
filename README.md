@@ -20,7 +20,7 @@ Den hemmelige knap virker kun, når detektoren er tændt (rød).
 - **Opstigning**: hastighed (hurtig 0,8 s / medium 1,2 s / langsom 2 s), hvad tryk efter fund gør (sluk / klar igen), *Vis demo*
 - **Nulstil indstillinger** (tryk to gange)
 
-Alt gemmes på telefonen (localStorage).
+Alt gemmes på telefonen (localStorage). Nederst i menuen står en lille diagnose-linje (skærm, vindue, app-højde) – send et skærmbillede af den, hvis layoutet ser forkert ud.
 
 Åbningsmetoden ændres øverst i `app.js` (`MENU_OPEN`): antal tryk, langt tryk i stedet, hjørne og størrelse. Buernes form ændres i `ARC_LAYOUT`.
 
