@@ -6,7 +6,7 @@
 (() => {
 'use strict';
 
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 
 // ============ ÅBNING AF HEMMELIG MENU – ret her ============
 const MENU_OPEN = {
@@ -636,39 +636,26 @@ document.addEventListener('touchend', (e) => {
 }, { passive: false });
 
 // ---------- højde: iOS-fejl i hjemmeskærm-apps ----------
-// På hjemmeskærmen gør iOS siden for lav (statuslinjens højde, ca. 59 pt), så der
-// kommer en sort stribe i bunden. Vi stoler derfor ikke på CSS (100%, inset: 0, vh)
-// men giver html, body, appen og menuen en fast højde i px: den største kendte
-// højde – og på hjemmeskærmen altid hele skærmens højde.
+// På hjemmeskærmen kan iOS gøre siden statuslinjens højde (ca. 59 pt) for lav, så der
+// kommer en sort stribe i bunden. Løsning fra Stopwatchplus: html, body, appen og
+// menuen får skærmens fulde højde i px. Her gøres det altid på hjemmeskærmen (ikke kun,
+// når innerHeight er for lav – iOS melder ikke altid fejlen).
 const isStandalone = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
-let lvhProbe = null;
-let appHeight = 0;
-function measureHeight() {
-  let h = Math.max(window.innerHeight || 0, document.documentElement.clientHeight || 0);
-  if (isStandalone()) {
-    if (!lvhProbe) {
-      lvhProbe = document.createElement('div');
-      lvhProbe.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:100vh;height:100lvh;visibility:hidden;pointer-events:none';
-      document.body.appendChild(lvhProbe);
-    }
-    h = Math.max(h, lvhProbe.offsetHeight, window.visualViewport ? window.visualViewport.height : 0);
-    if (window.screen && screen.height) {
-      const portrait = window.innerHeight >= window.innerWidth;
-      const full = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
-      if (full > h) h = full;
-    }
+let heightFixed = false;
+function fixHeight() {
+  const portrait = innerHeight > innerWidth;
+  const was = heightFixed;
+  heightFixed = isStandalone() && portrait && screen.height >= innerHeight;
+  // body er position:fixed med overflow:hidden og klipper ellers bunden væk
+  for (const el of [document.body, app, menu]) {
+    el.style.height = heightFixed ? `${screen.height}px` : '';
+    el.style.bottom = heightFixed ? 'auto' : '';
   }
-  return Math.round(h);
-}
-function fitHeight() {
-  const h = measureHeight();
-  if (h === appHeight) return false;
-  appHeight = h;
-  document.documentElement.style.setProperty('--app-h', `${h}px`);
-  return true;
+  document.documentElement.style.height = heightFixed ? `${screen.height}px` : '';
+  return heightFixed !== was;
 }
 function onResize() {
-  fitHeight();
+  fixHeight();
   layoutArcs();
   placeSecret();
   syncDiag();
@@ -683,14 +670,14 @@ function syncDiag() {
   const cs = getComputedStyle(probe);
   const safe = `${parseFloat(cs.paddingTop) || 0}/${parseFloat(cs.paddingBottom) || 0}`;
   probe.remove();
-  el.textContent = `skærm ${screen.width}×${screen.height} · vindue ${innerWidth}×${innerHeight} · app ${app.clientHeight} · safe ${safe} · ${isStandalone() ? 'hjemmeskærm' : 'browser'}`;
+  el.textContent = `skærm ${screen.width}×${screen.height} · vindue ${innerWidth}×${innerHeight} · app ${app.clientHeight} · safe ${safe} · ${isStandalone() ? 'hjemmeskærm' : 'browser'}${heightFixed ? ' · højde rettet' : ''}`;
 }
 window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', () => setTimeout(onResize, 300));
 window.addEventListener('pageshow', onResize);
 if (window.visualViewport) window.visualViewport.addEventListener('resize', onResize);
 // iOS kan ændre højden lige efter opstart uden at sige det – tjek et par gange
-for (const ms of [100, 400, 1000, 2500]) setTimeout(() => { if (fitHeight()) { layoutArcs(); placeSecret(); } }, ms);
+for (const ms of [100, 400, 1000, 2500]) setTimeout(onResize, ms);
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
@@ -705,7 +692,7 @@ document.addEventListener('visibilitychange', () => {
 
 // ============ START ============
 placeMenuZone();
-fitHeight();
+fixHeight();
 buildArcs();
 placeSecret();
 syncMenu();

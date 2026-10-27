@@ -1,4 +1,4 @@
-// Genererer app-ikoner og sorte iOS-opstartsbilleder (PNG) med Playwright/Chromium.
+// Genererer app-ikoner (PNG) med Playwright/Chromium.
 // Kør: node tools/make-icons.mjs
 import { writeFile, mkdir } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -34,25 +34,14 @@ const icons = [
   { file: 'favicon-32.png', size: 32, rounded: true, ringScale: 1.15 },
 ];
 
-const splash = [
-  [1320, 2868], [1206, 2622], [1260, 2736], [1290, 2796], [1179, 2556], [1284, 2778],
-  [1170, 2532], [1080, 2340], [1125, 2436], [1242, 2688], [828, 1792], [750, 1334],
-];
-
 const browser = await chromium.launch();
 const page = await browser.newPage();
 await mkdir(path.join(root, 'icons'), { recursive: true });
-await mkdir(path.join(root, 'splash'), { recursive: true });
 
 for (const t of icons) {
   await page.setViewportSize({ width: t.size, height: t.size });
   await page.setContent(`<style>html,body{margin:0;background:#000}svg{display:block;width:100vw;height:100vh}</style>${svg(t)}`);
   await writeFile(path.join(root, 'icons', t.file), await page.screenshot({ omitBackground: false }));
 }
-for (const [w, h] of splash) {
-  await page.setViewportSize({ width: w, height: h });
-  await page.setContent('<style>html,body{margin:0;background:#000;height:100%}</style>');
-  await writeFile(path.join(root, 'splash', `${w}x${h}.png`), await page.screenshot());
-}
 await browser.close();
-console.log('Ikoner og opstartsbilleder lavet.');
+console.log('Ikoner lavet.');

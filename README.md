@@ -47,7 +47,7 @@ style.css       Udseende
 app.js          Tilstande, buer, lyd (Web Audio), menu, skærmlås
 sw.js           Offline-cache
 manifest.json   PWA-oplysninger
-icons/ splash/  Ikoner og sorte opstartsbilleder
+icons/          Ikoner
 tools/make-icons.mjs   Laver ikoner (node tools/make-icons.mjs)
 tests/e2e.mjs          Automatisk test (node tests/e2e.mjs)
 ```
