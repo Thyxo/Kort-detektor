@@ -6,7 +6,7 @@
 (() => {
 'use strict';
 
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 
 // ============ ÅBNING AF HEMMELIG MENU – ret her ============
 const MENU_OPEN = {
@@ -385,8 +385,13 @@ function pressMain() {
   }
 }
 
+// Den hemmelige knap udløser tricket direkte – også når detektoren er slukket
+// (knappen bliver rød, og buerne stiger med det samme).
+function canSecret() {
+  return settings.secretEnabled && (state === 'off' || state === 'active');
+}
 function pressSecret() {
-  if (!settings.secretEnabled || state !== 'active') return false;
+  if (!canSecret()) return false;
   startRise();
   return true;
 }
@@ -406,16 +411,32 @@ mainBtn.addEventListener('pointerup', mainUp);
 mainBtn.addEventListener('pointercancel', () => mainBtn.classList.remove('down'));
 mainBtn.addEventListener('pointerleave', () => mainBtn.classList.remove('down'));
 
+// iOS må først starte lyd, når fingeren slippes. Er lyden ikke klar endnu (første tryk
+// efter opstart), startes tricket ved slip i stedet, så det første bip ikke forsvinder.
+let secretPending = false;
+const audioReady = () => !settings.sound || (ctx && ctx.state === 'running');
 secretBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   e.stopPropagation();
-  if (pressSecret()) haptic();
+  if (!canSecret()) return;
+  haptic();
+  if (audioReady()) pressSecret();
+  else secretPending = true;
 });
-secretBtn.addEventListener('pointerup', () => ensureAudio());
+secretBtn.addEventListener('pointerup', () => {
+  ensureAudio();
+  if (!secretPending) return;
+  secretPending = false;
+  const go = () => { if (canSecret()) pressSecret(); };
+  if (ctx && ctx.state !== 'running') {
+    Promise.race([ctx.resume(), new Promise((r) => setTimeout(r, 150))]).then(go, go);
+  } else go();
+});
+secretBtn.addEventListener('pointercancel', () => { secretPending = false; });
 
-// Alle slip af fingeren: genoptag lyd, hvis iOS har sat den på pause
+// Alle slip af fingeren: gør lyden klar (første tryk) eller genoptag den efter pause
 document.addEventListener('touchend', () => {
-  if (ctx && ctx.state !== 'running' && settings.sound) ctx.resume().catch(() => {});
+  if (settings.sound) ensureAudio();
   if (wantLock && !wakeLock) lockScreen();
 }, { passive: true });
 
@@ -553,7 +574,7 @@ function syncMenu() {
     above: 'Usynlig zone lige over den runde knap.',
   };
   $('zoneNote').textContent = settings.secretEnabled
-    ? `${notes[settings.secretPos] || notes.right} Virker kun, når detektoren er tændt (rød).`
+    ? `${notes[settings.secretPos] || notes.right} Et tryk her starter tricket med det samme.`
     : 'Den hemmelige knap er slået fra – buerne kan ikke tænde.';
   $('version').textContent = `Card Detector ${VERSION}`;
 }

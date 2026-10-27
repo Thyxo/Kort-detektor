@@ -62,10 +62,15 @@ ok(topArc.y < 120 && topArc.width > 300, `øverste bue højt oppe og bred (y=${t
 ok(lowArc.y + lowArc.height < mbox.y - 20 && lowArc.y > mbox.y - 130 && lowArc.width < topArc.width * 0.3, `nederste bue kort og lige over knappen (${(mbox.y - lowArc.y - lowArc.height).toFixed(0)} px)`);
 await shot('1-off');
 
-// hemmelig knap virker ikke, når den er slukket
+// hemmelig knap alene udløser tricket direkte fra SLUKKET
 await touch(...await center('#secretBtn'));
-await wait(300);
-ok(await st() === 'off' && await litCount() === 0, 'hemmelig knap gør intet, når SLUKKET');
+await wait(150);
+ok(await st() === 'rising', 'hemmelig knap alene (fra SLUKKET) → buerne stiger');
+await wait(1500);
+ok(await st() === 'found' && await litCount() === N, 'hemmelig knap alene → FUNDET');
+await touch(...await center('#mainBtn'));
+await wait(500);
+ok(await st() === 'off' && await litCount() === 0, 'hovedknap nulstiller');
 
 // SLUKKET → AKTIV
 await touch(...await center('#mainBtn'));

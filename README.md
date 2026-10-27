@@ -5,12 +5,11 @@
 Magi-app (PWA) der ligner en detektor, man holder hen over et spillekort. Den registrerer intet – buerne tænder, når du trykker på en usynlig hemmelig knap.
 
 ## Sådan bruges den
-1. **Tryk på den runde knap** (nederst i midten) → knappen bliver rød = detektoren er "tændt". Buerne er grå.
-2. Før telefonen hen over kortene. Ved det rigtige kort: **tryk diskret med tommelfingeren lige til højre for knappen** (usynlig knap).
-3. Buerne tænder nedefra og op (rød → orange → gul → grøn) med stigende bip og en "fundet"-tone til sidst.
-4. **Tryk på den runde knap** for at nulstille.
+1. Før telefonen hen over kortene. Ved det rigtige kort: **tryk diskret med tommelfingeren lige til højre for den runde knap** (usynlig knap).
+2. Knappen bliver rød, og buerne tænder nedefra og op (rød → orange → gul → grøn) med stigende bip og en "fundet"-tone til sidst.
+3. **Tryk på den runde knap** for at nulstille.
 
-Den hemmelige knap virker kun, når detektoren er tændt (rød).
+Du kan også tænde detektoren først med den runde knap (rød, buerne grå) for at vise, at den "søger". Den hemmelige knap virker i begge tilfælde.
 
 ## Hemmelig menu
 **5 hurtige tryk i øverste højre hjørne.** Luk med *Færdig*, tryk udenfor eller træk arket ned.
